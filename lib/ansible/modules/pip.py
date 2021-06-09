@@ -367,6 +367,14 @@ def _get_packages(module, pip, chdir):
     return command, out, err
 
 
+def _get_python_version(module, interpreter):
+    rc, stdout, stderr = module.run_command('%s --version' % interpreter)
+    if rc != 0:
+        return None
+    _, version = stdout.split(" ")
+    return version
+
+
 def _is_present(module, req, installed_pkgs, pkg_command):
     '''Return whether or not package is installed.'''
     for pkg in installed_pkgs:
@@ -653,6 +661,12 @@ def main():
             if not os.path.exists(os.path.join(env, 'bin', 'activate')):
                 venv_created = True
                 out, err = setup_virtualenv(module, env, chdir, out, err)
+            elif module.params['virtualenv_python']:
+                existing_python = _get_python_version(module, os.path.join(env, 'bin', 'python'))
+                defined_python = _get_python_version(module, module.params['virtualenv_python'])
+                if existing_python != defined_python:
+                    venv_created = True
+                    out, err = setup_virtualenv(module, env, chdir, out, err)
 
         pip = _get_pip(module, env, module.params['executable'])
 
